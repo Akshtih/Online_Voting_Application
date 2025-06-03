@@ -1,5 +1,3 @@
-Here's the clean markdown content for your README.md file that you can directly paste into GitHub:
-
 # Online Voting Portal
 
 A Flask-based application for online community voting and feedback collection with secure submission and real-time results.
