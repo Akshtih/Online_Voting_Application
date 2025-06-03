@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .vote-bar {
+        height: 30px;
+        transition: width 1s ease-in-out;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">Results: {{ campaign.title }}</h4>
+    </div>
+    <div class="card-body">
+        <p>{{ campaign.description }}</p>
+        
+        <div class="mb-4">
+            <h5>Voting Statistics</h5>
+            <p>Total Votes: <span id="total-votes">{{ campaign.get_vote_count() }}</span></p>
+            
+            {% if campaign.end_date > now and campaign.is_active %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>This campaign is still active. Results may change as more votes are cast.
+                </div>
+            {% else %}
+                <div class="alert alert-secondary">
+                    <i class="fas fa-check-circle me-2"></i>This campaign has ended. Final results are displayed.
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h5>Vote Distribution</h5>
+                <div id="results-container">
+                    {% set total_votes = campaign.get_vote_count() %}
+                    {% for option in campaign.options %}
+                        {% set option_votes = option.get_vote_count() %}
+                        {% set percentage = (option_votes / total_votes * 100) if total_votes > 0 else 0 %}
+                        <div class="mb-3" id="option-container-{{ option.id }}">
+                            <div class="d-flex justify-content-between mb-1">
+                                <div>{{ option.text }}</div>
+                                <div>
+                                    <span id="option-votes-{{ option.id }}">{{ option_votes }}</span> votes
+                                    (<span id="option-percentage-{{ option.id }}">{{ percentage|round(1) }}</span>%)
+                                </div>
+                            </div>
+                            <div class="progress">
+                                <div id="option-bar-{{ option.id }}" class="progress-bar vote-bar" 
+                                     role="progressbar" style="width: {{ percentage }}%"
+                                     aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-4">
+                <h5>Results Chart</h5>
+                <canvas id="results-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="text-center">
+            <a href="{{ url_for('main.campaigns') }}" class="btn btn-primary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Campaigns
+            </a>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+                <a href="{{ url_for('admin.edit_campaign', campaign_id=campaign.id) }}" class="btn btn-outline-primary ms-2">
+                    <i class="fas fa-edit me-1"></i>Edit Campaign
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const campaignId = {{ campaign.id }};
+        const options = [
+            {% for option in campaign.options %}
+                {
+                    id: {{ option.id }},
+                    text: "{{ option.text }}",
+                    votes: {{ option.get_vote_count() }}
+                },
+            {% endfor %}
+        ];
+        
+        // Create chart
+        const ctx = document.getElementById('results-chart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: options.map(opt => opt.text),
+                datasets: [{
+                    data: options.map(opt => opt.votes),
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(199, 199, 199, 0.8)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+
+        // Connect to Socket.IO for real-time updates
+        const socket = io();
+        socket.on('vote_update', function(data) {
+            if (data.campaign_id === campaignId) {
+                // Update the chart with new data
+                updateResults(data.options);
+            }
+        });
+
+        function updateResults(updatedOptions) {
+            let totalVotes = 0;
+            
+            // Calculate total votes
+            updatedOptions.forEach(opt => {
+                totalVotes += opt.count;
+            });
+            
+            // Update total votes display
+            document.getElementById('total-votes').textContent = totalVotes;
+            
+            // Update each option's display
+            updatedOptions.forEach(opt => {
+                const percentage = totalVotes > 0 ? (opt.count / totalVotes * 100).toFixed(1) : '0.0';
+                document.getElementById(`option-votes-${opt.id}`).textContent = opt.count;
+                document.getElementById(`option-percentage-${opt.id}`).textContent = percentage;
+                document.getElementById(`option-bar-${opt.id}`).style.width = `${percentage}%`;
+                document.getElementById(`option-bar-${opt.id}`).setAttribute('aria-valuenow', percentage);
+            });
+            
+            // Update chart data
+            chart.data.datasets[0].data = updatedOptions.map(opt => opt.count);
+            chart.update();
+        }
+    });
+</script>
+{% endblock %}

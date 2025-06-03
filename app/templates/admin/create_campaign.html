@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .option-group {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Create New Campaign</h4>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="" id="campaignForm">
+            {{ form.hidden_tag() }}
+            
+            <div class="mb-3">
+                {{ form.title.label(class="form-label") }}
+                {% if form.title.errors %}
+                    {{ form.title(class="form-control is-invalid") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.title.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.title(class="form-control") }}
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form.description.label(class="form-label") }}
+                {% if form.description.errors %}
+                    {{ form.description(class="form-control is-invalid", rows=5) }}
+                    <div class="invalid-feedback">
+                        {% for error in form.description.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.description(class="form-control", rows=5) }}
+                {% endif %}
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    {{ form.start_date.label(class="form-label") }}
+                    {% if form.start_date.errors %}
+                        {{ form.start_date(class="form-control is-invalid", type="datetime-local") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.start_date.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.start_date(class="form-control date-time-picker", type="datetime-local") }}
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    {{ form.end_date.label(class="form-label") }}
+                    {% if form.end_date.errors %}
+                        {{ form.end_date(class="form-control is-invalid", type="datetime-local") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.end_date.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.end_date(class="form-control date-time-picker", type="datetime-local") }}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mb-3 form-check">
+                {{ form.is_active(class="form-check-input") }}
+                {{ form.is_active.label(class="form-check-label") }}
+            </div>
+            
+            <hr>
+            <h5 class="mb-3">Voting Options</h5>
+            
+            <div id="options-container">
+                {% for option_form in form.options %}
+                <div class="option-group">
+                    <div class="mb-2 d-flex justify-content-between align-items-center">
+                        <label class="form-label">Option {{ loop.index }}</label>
+                        {% if loop.index > 2 %}
+                            <button type="button" class="btn btn-danger btn-sm remove-option">
+                                <i class="fas fa-times"></i> Remove
+                            </button>
+                        {% endif %}
+                    </div>
+                    {% if option_form.text.errors %}
+                        {{ option_form.text(class="form-control is-invalid", placeholder="Option text") }}
+                        <div class="invalid-feedback">
+                            {% for error in option_form.text.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ option_form.text(class="form-control", placeholder="Option text") }}
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="mb-4">
+                <button type="button" id="add-option" class="btn btn-outline-secondary">
+                    <i class="fas fa-plus me-1"></i>Add Another Option
+                </button>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('admin.manage_campaigns') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Cancel
+                </a>
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize date pickers
+        flatpickr(".date-time-picker", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            time_24hr: true
+        });
+        
+        // Add option functionality
+        const addOptionBtn = document.getElementById('add-option');
+        const optionsContainer = document.getElementById('options-container');
+        const optionTemplate = document.querySelector('.option-group');
+        
+        let optionCount = document.querySelectorAll('.option-group').length;
+        
+        addOptionBtn.addEventListener('click', function() {
+            optionCount++;
+            const newOption = optionTemplate.cloneNode(true);
+            const label = newOption.querySelector('.form-label');
+            const input = newOption.querySelector('input');
+            
+            label.textContent = `Option ${optionCount}`;
+            input.value = '';
+            input.name = `options-${optionCount-1}-text`; // Match WTForms naming convention
+            
+            // Ensure the remove button exists
+            if (!newOption.querySelector('.remove-option')) {
+                const headerDiv = newOption.querySelector('.d-flex');
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn btn-danger btn-sm remove-option';
+                removeBtn.innerHTML = '<i class="fas fa-times"></i> Remove';
+                headerDiv.appendChild(removeBtn);
+            }
+            
+            optionsContainer.appendChild(newOption);
+            setupRemoveButtons();
+        });
+        
+        function setupRemoveButtons() {
+            document.querySelectorAll('.remove-option').forEach(button => {
+                button.addEventListener('click', function() {
+                    this.closest('.option-group').remove();
+                    
+                    // Renumber the options
+                    let index = 1;
+                    document.querySelectorAll('.option-group').forEach(option => {
+                        option.querySelector('.form-label').textContent = `Option ${index}`;
+                        index++;
+                    });
+                });
+            });
+        }
+        
+        setupRemoveButtons();
+    });
+</script>
+{% endblock %}

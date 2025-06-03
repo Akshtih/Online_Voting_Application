@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">Voting Campaigns</h1>
+
+<ul class="nav nav-tabs mb-4" id="campaignTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-campaigns" type="button" role="tab">Active Campaigns</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past-campaigns" type="button" role="tab">Past Campaigns</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="campaignTabsContent">
+    <div class="tab-pane fade show active" id="active-campaigns" role="tabpanel">
+        {% if active_campaigns %}
+            <div class="row">
+                {% for campaign in active_campaigns %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ campaign.title }}</h5>
+                                <p class="card-text">{{ campaign.description|truncate(150) }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <a href="{{ url_for('main.campaign_detail', campaign_id=campaign.id) }}" class="btn btn-primary">
+                                            <i class="fas fa-vote-yea me-1"></i>Vote
+                                        </a>
+                                        <a href="{{ url_for('main.results', campaign_id=campaign.id) }}" class="btn btn-outline-primary ms-2">
+                                            <i class="fas fa-chart-pie me-1"></i>Results
+                                        </a>
+                                    </div>
+                                    <span class="badge bg-info text-dark">
+                                        {{ campaign.get_vote_count() }} votes
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-footer text-muted">
+                                <small>
+                                    <i class="far fa-clock me-1"></i>Ends: {{ campaign.end_date.strftime('%Y-%m-%d %H:%M') }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>There are no active campaigns at the moment.
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="tab-pane fade" id="past-campaigns" role="tabpanel">
+        {% if past_campaigns %}
+            <div class="row">
+                {% for campaign in past_campaigns %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ campaign.title }}</h5>
+                                <p class="card-text">{{ campaign.description|truncate(150) }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <a href="{{ url_for('main.results', campaign_id=campaign.id) }}" class="btn btn-primary">
+                                        <i class="fas fa-chart-pie me-1"></i>View Results
+                                    </a>
+                                    <span class="badge bg-secondary">
+                                        {{ campaign.get_vote_count() }} votes
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-footer text-muted">
+                                <small>
+                                    <i class="far fa-calendar-check me-1"></i>Ended: {{ campaign.end_date.strftime('%Y-%m-%d %H:%M') }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>There are no past campaigns.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

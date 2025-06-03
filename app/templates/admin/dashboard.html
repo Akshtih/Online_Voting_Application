@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4"><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h1>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Total Campaigns</h5>
+                        <h2 class="display-4">{{ campaigns_count }}</h2>
+                    </div>
+                    <i class="fas fa-poll fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Active Campaigns</h5>
+                        <h2 class="display-4">{{ active_campaigns }}</h2>
+                    </div>
+                    <i class="fas fa-vote-yea fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Registered Users</h5>
+                        <h2 class="display-4">{{ users_count }}</h2>
+                    </div>
+                    <i class="fas fa-users fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Total Votes</h5>
+                        <h2 class="display-4">{{ votes_count }}</h2>
+                    </div>
+                    <i class="fas fa-chart-bar fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Campaigns</h5>
+                <a href="{{ url_for('admin.manage_campaigns') }}" class="btn btn-light btn-sm">
+                    <i class="fas fa-list me-1"></i>View All
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for campaign in recent_campaigns %}
+                        <a href="{{ url_for('main.campaign_detail', campaign_id=campaign.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ campaign.title }}</h6>
+                                <small class="text-muted">{{ campaign.start_date.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                            <p class="mb-1 text-muted small">{{ campaign.description|truncate(100) }}</p>
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">
+                                    <i class="fas fa-users me-1"></i>{{ campaign.get_vote_count() }} votes
+                                </small>
+                                <span class="badge {% if campaign.is_active and campaign.end_date > now %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ 'Active' if campaign.is_active and campaign.end_date > now else 'Inactive' }}
+                                </span>
+                            </div>
+                        </a>
+                    {% else %}
+                        <div class="text-center p-3 text-muted">
+                            <i class="fas fa-info-circle me-1"></i>No campaigns found
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('admin.create_campaign') }}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-2"></i>Create New Campaign
+                    </a>
+                    <a href="{{ url_for('admin.manage_campaigns') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i>Manage Campaigns
+                    </a>
+                    <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users-cog me-2"></i>Manage Users
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
